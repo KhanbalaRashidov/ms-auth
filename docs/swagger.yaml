@@ -159,9 +159,6 @@ definitions:
     properties:
       device_id:
         type: string
-      identifier:
-        description: username, email, phone or id
-        type: string
       ip_address:
         type: string
       password:
@@ -170,9 +167,12 @@ definitions:
         type: boolean
       user_agent:
         type: string
+      username:
+        description: username, email, phone or id
+        type: string
     required:
-    - identifier
     - password
+    - username
     type: object
   input.LogoutRequest:
     properties:
@@ -235,6 +235,8 @@ definitions:
     properties:
       code:
         type: string
+      device_id:
+        type: string
     required:
     - code
     type: object
@@ -256,18 +258,26 @@ definitions:
       success:
         type: boolean
     type: object
-host: localhost:3000
+host: localhost:9090/api
 info:
-  contact:
-    email: contact@example.com
-    name: Khanbala Rashidov
+  contact: {}
   description: Authentication and User Management Microservice
-  license:
-    name: MIT
-  termsOfService: http://example.com/terms/
   title: ms-auth API
   version: "1.0"
 paths:
+  /actuator/health:
+    get:
+      description: Returns OK if the service is running
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health check endpoint
+      tags:
+      - Health
   /admin/blacklist:
     get:
       description: Retrieves a paginated list of blacklist entries, optionally filtered
@@ -1153,7 +1163,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Verifies MFA code for the logged-in user
+      description: Verifies MFA code and returns access token pair
       parameters:
       - description: Verify MFA Request
         in: body
@@ -1359,7 +1369,7 @@ paths:
       summary: Reset user password
       tags:
       - Auth
-  /user/profile:
+  /users/profile:
     get:
       description: Retrieves the detailed profile information of the currently authenticated
         user.
@@ -1463,7 +1473,7 @@ paths:
       summary: Update user profile
       tags:
       - User Profile
-  /user/sessions:
+  /users/sessions:
     get:
       description: Retrieves a list of all active sessions for the currently authenticated
         user.
@@ -1504,7 +1514,7 @@ paths:
       summary: Get user active sessions
       tags:
       - User Sessions
-  /user/sessions/{session_id}:
+  /users/sessions/{session_id}:
     delete:
       description: Revokes a single active session identified by its ID for the current
         user.
@@ -1567,7 +1577,7 @@ paths:
       summary: Revoke a specific user session
       tags:
       - User Sessions
-  /user/sessions/revoke-all:
+  /users/sessions/revoke-all:
     post:
       description: Revokes all active sessions for the currently authenticated user,
         forcing re-login on other devices.
@@ -1606,54 +1616,7 @@ paths:
       summary: Revoke all user sessions
       tags:
       - User Sessions
-  /user/verify-email:
-    post:
-      consumes:
-      - application/json
-      description: Verifies the user's email address using a provided verification
-        token.
-      parameters:
-      - description: Verify Email Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.VerifyEmailRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Email verified successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "400":
-          description: Invalid request body, validation error, or invalid/expired
-            token
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                error:
-                  $ref: '#/definitions/utils.APIError'
-              type: object
-        "500":
-          description: Internal server error
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                error:
-                  $ref: '#/definitions/utils.APIError'
-              type: object
-      summary: Verify email with token
-      tags:
-      - User Verification
-  /user/verify-email/send:
+  /users/verify-email:
     post:
       description: Sends a new email verification link to the user's registered email
         address.
@@ -1701,7 +1664,103 @@ paths:
       summary: Send email verification
       tags:
       - User Verification
-  /user/verify-phone:
+  /users/verify-email/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the user's email address using a provided verification
+        token.
+      parameters:
+      - description: Verify Email Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Invalid request body, validation error, or invalid/expired
+            token
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/utils.APIError'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/utils.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Verify email with token
+      tags:
+      - User Verification
+  /users/verify-phone:
+    post:
+      description: Sends a verification code to the user's registered phone number.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Phone verification code sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/utils.APIError'
+              type: object
+        "409":
+          description: Phone already verified or too many requests
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/utils.APIError'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/utils.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Send phone verification code
+      tags:
+      - User Verification
+  /users/verify-phone/confirm:
     post:
       consumes:
       - application/json
@@ -1759,51 +1818,10 @@ paths:
       summary: Verify phone with code
       tags:
       - User Verification
-  /user/verify-phone/send:
-    post:
-      description: Sends a verification code to the user's registered phone number.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Phone verification code sent successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                data:
-                  type: object
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                error:
-                  $ref: '#/definitions/utils.APIError'
-              type: object
-        "409":
-          description: Phone already verified or too many requests
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                error:
-                  $ref: '#/definitions/utils.APIError'
-              type: object
-        "500":
-          description: Internal server error
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                error:
-                  $ref: '#/definitions/utils.APIError'
-              type: object
-      security:
-      - BearerAuth: []
-      summary: Send phone verification code
-      tags:
-      - User Verification
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" + space + your JWT token
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
