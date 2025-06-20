@@ -9,10 +9,10 @@ import (
 
 // TokenService defines token service interface
 type TokenService interface {
-	GenerateToken(userID uuid.UUID, tokenType entities.TokenType, duration time.Duration) (string, error)
+	GenerateToken(user *entities.User, tokenType entities.TokenType, duration time.Duration) (string, error)
 	ValidateToken(tokenString string) (*entities.JWTClaims, error)
-	GenerateResetToken(userID uuid.UUID) (string, error)
-	GenerateVerificationToken(userID uuid.UUID, tokenType entities.TokenType) (string, error)
+	GenerateResetToken(user *entities.User) (string, error)
+	GenerateVerificationToken(user *entities.User, tokenType entities.TokenType) (string, error)
 }
 
 // JWTTokenService implements JWT token service
@@ -32,10 +32,10 @@ func NewJWTTokenService(secretKey, issuer, audience string) *JWTTokenService {
 }
 
 // GenerateToken generates JWT token
-func (s *JWTTokenService) GenerateToken(userID uuid.UUID, tokenType entities.TokenType, duration time.Duration) (string, error) {
+func (s *JWTTokenService) GenerateToken(user *entities.User, tokenType entities.TokenType, duration time.Duration) (string, error) {
 	now := time.Now()
 	claims := &entities.JWTClaims{
-		UserID:    userID,
+		UserID:    user.ID,
 		TokenID:   uuid.New(),
 		TokenType: tokenType,
 		IssuedAt:  now.Unix(),
@@ -43,6 +43,9 @@ func (s *JWTTokenService) GenerateToken(userID uuid.UUID, tokenType entities.Tok
 		NotBefore: now.Unix(),
 		Issuer:    s.issuer,
 		Audience:  s.audience,
+		Role:      user.Role,
+		Email:     user.Email,
+		Username:  user.Username,
 	}
 
 	return utils.GenerateJWT(claims, s.secretKey)
@@ -54,15 +57,15 @@ func (s *JWTTokenService) ValidateToken(tokenString string) (*entities.JWTClaims
 }
 
 // GenerateResetToken generates password reset token
-func (s *JWTTokenService) GenerateResetToken(userID uuid.UUID) (string, error) {
-	return s.GenerateToken(userID, entities.TokenTypePasswordReset, 1*time.Hour)
+func (s *JWTTokenService) GenerateResetToken(user *entities.User) (string, error) {
+	return s.GenerateToken(user, entities.TokenTypePasswordReset, 1*time.Hour)
 }
 
 // GenerateVerificationToken generates verification token
-func (s *JWTTokenService) GenerateVerificationToken(userID uuid.UUID, tokenType entities.TokenType) (string, error) {
+func (s *JWTTokenService) GenerateVerificationToken(user *entities.User, tokenType entities.TokenType) (string, error) {
 	duration := 24 * time.Hour
 	if tokenType == entities.TokenTypePhoneVerify {
 		duration = 15 * time.Minute
 	}
-	return s.GenerateToken(userID, tokenType, duration)
+	return s.GenerateToken(user, tokenType, duration)
 }

@@ -18,7 +18,7 @@ type RegisterRequest struct {
 
 // LoginRequest represents user login request
 type LoginRequest struct {
-	Identifier string `json:"identifier" validate:"required"` // username, email, phone or id
+	Identifier string `json:"username" validate:"required"` // username, email, phone or id
 	Password   string `json:"password" validate:"required"`
 	DeviceID   string `json:"device_id,omitempty"`
 	UserAgent  string `json:"user_agent,omitempty"`
@@ -87,7 +87,8 @@ type EnableMFAResponse struct {
 
 // VerifyMFARequest represents verify MFA request
 type VerifyMFARequest struct {
-	Code string `json:"code" validate:"required,len=6,numeric"`
+	Code     string `json:"code" validate:"required,len=6,numeric"`
+	DeviceID string `json:"device_id,omitempty"`
 }
 
 // LogoutRequest represents logout request
@@ -118,6 +119,7 @@ type AuthUseCase interface {
 	EnableMFA(ctx context.Context, userID uuid.UUID, req *EnableMFARequest) (*EnableMFAResponse, error)
 	DisableMFA(ctx context.Context, userID uuid.UUID, password string) error
 	VerifyMFA(ctx context.Context, userID uuid.UUID, req *VerifyMFARequest) error
+	CompleteMFALogin(ctx context.Context, userID uuid.UUID, req *LoginRequest) (*entities.TokenPair, error)
 	GenerateBackupCodes(ctx context.Context, userID uuid.UUID) ([]string, error)
 }
 

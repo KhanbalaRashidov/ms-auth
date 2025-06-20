@@ -74,7 +74,7 @@ func NewUserHandler(userUseCase input.UserUseCase, blacklistUseCase input.Blackl
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 404 {object} utils.APIResponse{error=utils.APIError} "User not found"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/profile [get]
+// @Router /users/profile [get]
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
@@ -98,7 +98,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.APIResponse{error=utils.APIError} "Invalid request body or validation error"
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/profile [put]
+// @Router /users/profile [put]
 func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
@@ -143,7 +143,7 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 // @Success 200 {object} utils.APIResponse{data=[]object} "Sessions retrieved successfully"
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/sessions [get]
+// @Router /users/sessions [get]
 func (h *UserHandler) GetSessions(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
@@ -167,7 +167,7 @@ func (h *UserHandler) GetSessions(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 404 {object} utils.APIResponse{error=utils.APIError} "Session not found"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/sessions/{session_id} [delete]
+// @Router /users/sessions/{session_id} [delete]
 func (h *UserHandler) RevokeSession(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 	sessionID := c.Params("session_id")
@@ -193,7 +193,7 @@ func (h *UserHandler) RevokeSession(c *fiber.Ctx) error {
 // @Success 200 {object} utils.APIResponse{data=object} "All sessions revoked successfully"
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/sessions/revoke-all [post]
+// @Router /users/sessions/revoke-all [post]
 func (h *UserHandler) RevokeAllSessions(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
@@ -214,7 +214,7 @@ func (h *UserHandler) RevokeAllSessions(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 409 {object} utils.APIResponse{error=utils.APIError} "Email already verified or too many requests"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/verify-email/send [post]
+// @Router /users/verify-email [post]
 func (h *UserHandler) SendEmailVerification(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
@@ -231,11 +231,12 @@ func (h *UserHandler) SendEmailVerification(c *fiber.Ctx) error {
 // @Tags User Verification
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body VerifyEmailRequest true "Verify Email Request"
 // @Success 200 {object} utils.APIResponse{data=object} "Email verified successfully"
 // @Failure 400 {object} utils.APIResponse{error=utils.APIError} "Invalid request body, validation error, or invalid/expired token"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/verify-email [post]
+// @Router /users/verify-email/confirm [post]
 func (h *UserHandler) VerifyEmail(c *fiber.Ctx) error {
 	var req VerifyEmailRequest
 
@@ -264,7 +265,7 @@ func (h *UserHandler) VerifyEmail(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 409 {object} utils.APIResponse{error=utils.APIError} "Phone already verified or too many requests"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/verify-phone/send [post]
+// @Router /users/verify-phone [post]
 func (h *UserHandler) SendPhoneVerification(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
@@ -287,7 +288,7 @@ func (h *UserHandler) SendPhoneVerification(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.APIResponse{error=utils.APIError} "Invalid request body, validation error, or invalid/expired code"
 // @Failure 401 {object} utils.APIResponse{error=utils.APIError} "Unauthorized"
 // @Failure 500 {object} utils.APIResponse{error=utils.APIError} "Internal server error"
-// @Router /user/verify-phone [post]
+// @Router /users/verify-phone/confirm [post]
 func (h *UserHandler) VerifyPhone(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 

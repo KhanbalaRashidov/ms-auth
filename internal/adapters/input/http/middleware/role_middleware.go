@@ -14,8 +14,8 @@ func RequireRole(requiredRole string) fiber.Handler {
 		// 2. Call MS-Authz service to check if role has required permissions
 		// 3. Or implement local role checking
 
-		roleID := c.Locals("role_id")
-		if roleID == nil {
+		role := c.Locals("role")
+		if role == nil {
 			return utils.ErrorResponse(c, 403, "Access denied: No role assigned", nil)
 		}
 
@@ -23,7 +23,7 @@ func RequireRole(requiredRole string) fiber.Handler {
 		// This could involve calling MS-Authz service or checking local role definitions
 
 		// For demonstration, we'll assume admin role check
-		if requiredRole == "admin" {
+		if role == "admin" {
 			// In real implementation, check if user has admin role
 			// For now, we'll allow if role_id exists
 			return c.Next()

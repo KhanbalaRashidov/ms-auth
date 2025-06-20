@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"ms-auth/internal/core/domain/entities"
 	"ms-auth/internal/core/ports/input"
 	"ms-auth/internal/core/ports/output"
@@ -160,11 +161,29 @@ func (s *AuthService) Login(ctx context.Context, req *input.LoginRequest) (*inpu
 	s.userRepo.UpdateLoginAttempts(ctx, user.ID, 0, nil)
 
 	// Check if MFA is required
+	// AuthService.Login metodunda
+	// AuthService.Login metodunda MFA hissəsi
 	if user.TwoFactorEnabled {
 		// Generate MFA challenge token
-		challengeToken, err := s.tokenService.GenerateToken(user.ID, entities.TokenTypeAccess, 5*time.Minute)
+		challengeToken, err := s.tokenService.GenerateToken(user, entities.TokenTypeMFAChallenge, 15*time.Minute)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate MFA challenge: %w", err)
+		}
+
+		// Challenge token-i verilənlər bazasında saxla
+		now := time.Now()
+		challengeTokenEntity := &entities.Token{
+			UserID:    user.ID,
+			TokenHash: utils.HashSHA256(challengeToken),
+			Type:      entities.TokenTypeMFAChallenge,
+			ExpiresAt: now.Add(15 * time.Minute),
+			DeviceID:  &req.DeviceID,
+			UserAgent: &req.UserAgent,
+			IPAddress: &req.IPAddress,
+		}
+
+		if err := s.tokenRepo.Create(ctx, challengeTokenEntity); err != nil {
+			return nil, fmt.Errorf("failed to save MFA challenge token: %w", err)
 		}
 
 		return &input.LoginResponse{
@@ -173,7 +192,6 @@ func (s *AuthService) Login(ctx context.Context, req *input.LoginRequest) (*inpu
 			MFAChallenge: challengeToken,
 		}, nil
 	}
-
 	// Generate token pair
 	tokenPair, err := s.generateTokenPair(ctx, user, req)
 	if err != nil {
@@ -267,7 +285,7 @@ func (s *AuthService) ForgotPassword(ctx context.Context, req *input.ForgotPassw
 	}
 
 	// Generate reset token
-	resetToken, err := s.tokenService.GenerateResetToken(user.ID)
+	resetToken, err := s.tokenService.GenerateResetToken(user)
 	if err != nil {
 		return fmt.Errorf("failed to generate reset token: %w", err)
 	}
@@ -394,6 +412,7 @@ func (s *AuthService) EnableMFA(ctx context.Context, userID uuid.UUID, req *inpu
 
 	// Generate QR code
 	qrCode, err := s.otpService.GenerateQRCode(secret, user.Email, "MS-Auth")
+	log.Println(qrCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate QR code: %w", err)
 	}
@@ -448,6 +467,31 @@ func (s *AuthService) VerifyMFA(ctx context.Context, userID uuid.UUID, req *inpu
 	}
 
 	return nil
+}
+
+// MFA verify ediləndən sonra normal token pair yaradın
+// AuthService-ə əlavə edin
+func (s *AuthService) CompleteMFALogin(ctx context.Context, userID uuid.UUID, req *input.LoginRequest) (*entities.TokenPair, error) {
+	// Get user
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+
+	// MFA challenge token-lərini ləğv et
+	s.tokenRepo.RevokeAllUserTokens(ctx, userID, entities.TokenTypeMFAChallenge)
+
+	// Normal token pair yarat
+	tokenPair, err := s.generateTokenPair(ctx, user, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+	}
+
+	// Update last login
+	user.UpdateLastLogin(req.IPAddress)
+	s.userRepo.UpdateLastLogin(ctx, user.ID, *user.LastLoginAt, req.IPAddress)
+
+	return tokenPair, nil
 }
 
 // GenerateBackupCodes generates new backup codes
@@ -556,13 +600,13 @@ func (s *AuthService) generateTokenPair(ctx context.Context, user *entities.User
 	}
 
 	// Generate access token
-	accessToken, err := s.tokenService.GenerateToken(user.ID, entities.TokenTypeAccess, accessTokenDuration)
+	accessToken, err := s.tokenService.GenerateToken(user, entities.TokenTypeAccess, accessTokenDuration)
 	if err != nil {
 		return nil, err
 	}
 
 	// Generate refresh token
-	refreshToken, err := s.tokenService.GenerateToken(user.ID, entities.TokenTypeRefresh, refreshTokenDuration)
+	refreshToken, err := s.tokenService.GenerateToken(user, entities.TokenTypeRefresh, refreshTokenDuration)
 	if err != nil {
 		return nil, err
 	}

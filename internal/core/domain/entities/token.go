@@ -14,6 +14,7 @@ const (
 	TokenTypePasswordReset TokenType = "password_reset"
 	TokenTypeEmailVerify   TokenType = "email_verify"
 	TokenTypePhoneVerify   TokenType = "phone_verify"
+	TokenTypeMFAChallenge  TokenType = "mfa_challenge"
 )
 
 // Token represents token entity
@@ -71,7 +72,7 @@ type JWTClaims struct {
 	UserID    uuid.UUID  `json:"user_id"`
 	Username  string     `json:"username"`
 	Email     string     `json:"email"`
-	RoleID    *uuid.UUID `json:"role_id,omitempty"`
+	Role      string     `json:"role"`
 	GroupID   *uuid.UUID `json:"group_id,omitempty"`
 	TokenID   uuid.UUID  `json:"token_id"`
 	TokenType TokenType  `json:"token_type"`

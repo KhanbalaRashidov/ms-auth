@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"log"
 	"ms-auth/internal/core/ports/input"
 	"ms-auth/pkg/utils"
 	"net/http"
@@ -278,6 +279,7 @@ func (h *AuthHandler) EnableMFA(c *fiber.Ctx) error {
 	}
 
 	response, err := h.authUseCase.EnableMFA(c.Context(), utils.ParseUUID(userID), &req)
+	log.Println(response.QRCode)
 	if err != nil {
 		return utils.HandleServiceError(c, err)
 	}
@@ -319,7 +321,7 @@ func (h *AuthHandler) DisableMFA(c *fiber.Ctx) error {
 
 // VerifyMFA
 // @Summary Verify Multi-Factor Authentication (MFA)
-// @Description Verifies MFA code for the logged-in user
+// @Description Verifies MFA code and returns access token pair
 // @Tags MFA
 // @Accept json
 // @Produce json
@@ -342,11 +344,28 @@ func (h *AuthHandler) VerifyMFA(c *fiber.Ctx) error {
 		return utils.ValidationErrorResponse(c, err)
 	}
 
+	// MFA kodu doğrula
 	if err := h.authUseCase.VerifyMFA(c.Context(), utils.ParseUUID(userID), &req); err != nil {
 		return utils.HandleServiceError(c, err)
 	}
 
-	return utils.SuccessResponse(c, http.StatusOK, "MFA verified successfully", nil)
+	// MFA doğrulandıqdan sonra normal token pair yarat
+	loginReq := &input.LoginRequest{
+		DeviceID:  "web", // Request-dən gəlməli (frontend-dən göndərin)
+		UserAgent: string(c.Request().Header.UserAgent()),
+		IPAddress: c.IP(),
+		Remember:  false,
+	}
+
+	tokenPair, err := h.authUseCase.CompleteMFALogin(c.Context(), utils.ParseUUID(userID), loginReq)
+	if err != nil {
+		return utils.HandleServiceError(c, err)
+	}
+
+	return utils.SuccessResponse(c, http.StatusOK, "MFA verified successfully", map[string]interface{}{
+		"message":    "MFA verified successfully",
+		"token_pair": tokenPair,
+	})
 }
 
 // GetMe
@@ -369,4 +388,16 @@ func (h *AuthHandler) GetMe(c *fiber.Ctx) error {
 	}
 
 	return utils.SuccessResponse(c, http.StatusOK, "User retrieved successfully", user)
+}
+
+// HealthCheck godoc
+// @Summary Health check endpoint
+// @Description Returns OK if the service is running
+// @Tags Health
+// @Produce plain
+// @Success 200 {string} string "OK"
+// @Router /actuator/health [get]
+func (h *AuthHandler) HealthCheck(c *fiber.Ctx) error {
+	log.Println("[HEALTH] Health check OK")
+	return c.SendString("OK")
 }

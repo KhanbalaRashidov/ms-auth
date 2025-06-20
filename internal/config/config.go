@@ -130,10 +130,9 @@ type CORSConfig struct {
 
 // LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
-	// Load .env file if exists
-	godotenv.Load()
+	_ = godotenv.Load(".env")
 
-	config := &Config{
+	return &Config{
 		Server: ServerConfig{
 			Host:         getEnv("SERVER_HOST", "0.0.0.0"),
 			Port:         getEnv("SERVER_PORT", "8080"),
@@ -146,7 +145,7 @@ func LoadConfig() (*Config, error) {
 			Host:            getEnv("DB_HOST", "localhost"),
 			Port:            getEnv("DB_PORT", "5432"),
 			User:            getEnv("DB_USER", "postgres"),
-			Password:        getEnv("DB_PASSWORD", ""),
+			Password:        getEnv("DB_PASSWORD", "postgres"),
 			Name:            getEnv("DB_NAME", "ms_auth"),
 			SSLMode:         getEnv("DB_SSL_MODE", "disable"),
 			MaxOpenConns:    getIntEnv("DB_MAX_OPEN_CONNS", 100),
@@ -182,7 +181,7 @@ func LoadConfig() (*Config, error) {
 			DB:       getIntEnv("REDIS_DB", 0),
 		},
 		Email: EmailConfig{
-			SMTPHost:     getEnv("SMTP_HOST", ""),
+			SMTPHost:     getEnv("SMTP_HOST", "smtp.mailtrap.io"),
 			SMTPPort:     getIntEnv("SMTP_PORT", 587),
 			SMTPUsername: getEnv("SMTP_USERNAME", ""),
 			SMTPPassword: getEnv("SMTP_PASSWORD", ""),
@@ -225,9 +224,7 @@ func LoadConfig() (*Config, error) {
 			ExposeHeaders:    getSliceEnv("CORS_EXPOSE_HEADERS", []string{}),
 			MaxAge:           getDurationEnv("CORS_MAX_AGE", 12*time.Hour),
 		},
-	}
-
-	return config, nil
+	}, nil
 }
 
 // Helper functions for environment variable parsing

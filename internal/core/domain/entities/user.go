@@ -35,7 +35,7 @@ type User struct {
 	PasswordHash       string                 `json:"-" gorm:"not null"`
 	FirstName          string                 `json:"first_name"`
 	LastName           string                 `json:"last_name"`
-	RoleID             *uuid.UUID             `json:"role_id,omitempty" gorm:"type:uuid"`
+	Role               string                 `json:"role" gorm:"type:varchar(50);default:'user';not null"` // Changed from UserRole to string
 	GroupID            *uuid.UUID             `json:"group_id,omitempty" gorm:"type:uuid"`
 	Status             UserStatus             `json:"status" gorm:"default:1"`
 	VerificationStatus VerificationStatus     `json:"verification_status" gorm:"default:0"`

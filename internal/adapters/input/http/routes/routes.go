@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -102,11 +101,11 @@ func SetupRoutes(
 	userHandler := handlers.NewUserHandler(userUseCase, blacklistUseCase)
 
 	// Create an API group for version 1 routes (/api/v1)
-	api := app.Group("/api/v1")
+	api := app.Group("/api")
 
 	// --- API Version Specific Health Check ---
 	// This is an additional health check endpoint specific to the API version.
-	api.Get("/health", func(c *fiber.Ctx) error {
+	api.Get("/actuator/health", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"status":  "ok",
 			"service": "ms-auth",
@@ -122,6 +121,7 @@ func SetupRoutes(
 		auth.Post("/refresh", authHandler.RefreshToken)
 		auth.Post("/forgot-password", authHandler.ForgotPassword)
 		auth.Post("/reset-password", authHandler.ResetPassword)
+		auth.Post("/mfa/verify", middleware.MFAAuthMiddleware(authUseCase), authHandler.VerifyMFA)
 	}
 
 	// --- Protected Authentication Routes (authentication required) ---
@@ -137,7 +137,6 @@ func SetupRoutes(
 		{
 			mfa.Post("/enable", authHandler.EnableMFA)
 			mfa.Post("/disable", authHandler.DisableMFA)
-			mfa.Post("/verify", authHandler.VerifyMFA)
 		}
 	}
 
@@ -229,12 +228,9 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 
 	// CORS middleware configuration for Cross-Origin Resource Sharing
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     strings.Join(cfg.CORS.AllowOrigins, ","),
-		AllowMethods:     strings.Join(cfg.CORS.AllowMethods, ","),
-		AllowHeaders:     strings.Join(cfg.CORS.AllowHeaders, ","),
-		AllowCredentials: cfg.CORS.AllowCredentials,
-		ExposeHeaders:    strings.Join(cfg.CORS.ExposeHeaders, ","),
-		MaxAge:           int(cfg.CORS.MaxAge.Seconds()),
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
 	}))
 
 	// IP-based rate limiting middleware if enabled in configuration
