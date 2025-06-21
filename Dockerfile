@@ -47,7 +47,7 @@ ARG RABBITMQ_PASSWORD
 ARG RABBITMQ_HOST
 
 ENV SERVER_HOST=0.0.0.0
-ENV SERVER_PORT=9090
+ENV SERVER_PORT=8080
 ENV ENVIRONMENT=production
 ENV READ_TIMEOUT=30s
 ENV WRITE_TIMEOUT=30s
@@ -136,7 +136,7 @@ COPY --from=builder /app/ms-auth ./
 RUN apk add --no-cache ca-certificates curl
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:9090/api/actuator/health || exit 1
-EXPOSE 9090
+  CMD curl -f http://localhost:8080/api/actuator/health || exit 1
+EXPOSE 8080
 
 CMD ["./ms-auth"]

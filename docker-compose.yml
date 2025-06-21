@@ -15,11 +15,11 @@ services:
         JWT_SECRET_KEY: "your-production-secret-key-change-this"
     container_name: ms-auth
     ports:
-      - "9090:9090"
+      - "8080:8080"
     environment:
       # Server Configuration
       - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=9090
+      - SERVER_PORT=8080
       - ENVIRONMENT=production
       - READ_TIMEOUT=30s
       - WRITE_TIMEOUT=30s

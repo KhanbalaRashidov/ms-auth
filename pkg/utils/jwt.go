@@ -24,10 +24,7 @@ func GenerateJWT(claims *entities.JWTClaims, secretKey string) (string, error) {
 		"aud":        claims.Audience,
 	}
 
-	// Always add the role claim, even if it's an empty string.
-	// The `claims` object is a pointer, so it won't be nil if the function is called.
-	// `claims.Role` is a string and always exists.
-	jwtClaims["role"] = claims.Role // Dəyişiklik burada edildi.
+	jwtClaims["role"] = claims.Role
 
 	if claims.GroupID != nil {
 		jwtClaims["group_id"] = claims.GroupID.String()
@@ -132,12 +129,7 @@ func parseJWTClaims(claims jwt.MapClaims) (*entities.JWTClaims, error) {
 		jwtClaims.Email = email
 	}
 
-	// Parse role
-	// No need for `if roleStr, ok := claims["role"].(string); ok`
-	// because `claims["role"]` will always exist if added in GenerateJWT,
-	// and if it's a string, the type assertion will succeed.
-	// If it's not present (e.g., old token or not added), it will be default ""
-	if roleStr, ok := claims["role"].(string); ok { // Still a good practice to check if it's actually a string
+	if roleStr, ok := claims["role"].(string); ok {
 		jwtClaims.Role = roleStr
 	}
 
