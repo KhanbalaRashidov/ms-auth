@@ -6,10 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DB_HOST: 172.23.37.14
-        DB_NAME: riskdb
-        DB_USERNAME: msauthz
-        DB_PASSWORD: msauthz
+        DB_HOST: postgres
+        DB_NAME: ms_auth
+        DB_USERNAME: postgres
+        DB_PASSWORD: postgres
         REDIS_HOST: redis
         REDIS_PASSWORD: ""
         JWT_SECRET_KEY: "your-production-secret-key-change-this"
@@ -26,11 +26,11 @@ services:
       - IDLE_TIMEOUT=120s
 
       # Database Configuration
-      - DB_HOST=172.23.37.14
+      - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=msauthz
-      - DB_PASSWORD=msauthz
-      - DB_NAME=riskdb
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=ms_auth
       - DB_SSL_MODE=disable
       - DB_MAX_OPEN_CONNS=100
       - DB_MAX_IDLE_CONNS=10
